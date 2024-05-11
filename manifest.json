@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Catanalyze",
+  "version": "1.0",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["https://*.colonist.io/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.colonist.io/*"],
+      "js": ["contentScript.js"]
+    }
+  ]
+}
