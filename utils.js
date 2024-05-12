@@ -124,6 +124,30 @@ const addTransactionDOMElement = (type, payload, pid = "game-log-text") => {
       ></span
     >`;
   }
+
+  if (type == "you-steal") {
+    element.innerHTML = `<img
+      class=""
+      id=""
+      alt="Guest"
+      src="/dist/images/icon_player.svg?rev=09141e4aab30f18a521c"
+      width="20"
+      height="20"
+    /><span class="" id=""
+      >You stole
+      <img
+        src="/dist/images/card_wool.svg?rev=9bd29423eae83fe9e6e4"
+        alt="${payload.resource}"
+        height="20"
+        width="14.25"
+        class="lobby-chat-text-icon"
+      />
+      from
+      <span class="semibold" style="word-break: break-all; color: #e09742"
+        >${payload.robbed}</span
+      ></span
+    >`;
+  }
   document.getElementById(pid).appendChild(element);
 };
 export default addTransactionDOMElement;

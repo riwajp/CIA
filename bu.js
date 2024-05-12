@@ -1,7 +1,11 @@
-import addTransactionDOMElement from "./utils.js";
-
-const my_name = "a";
-let users = {};
+const users = {};
+(() => {
+  chrome.runtime.onMessage.addListener((params, sender, response) => {
+    users = {};
+    console.log(params.url);
+    main();
+  });
+})();
 
 const resources_required = {
   road: ["lumber", "brick"],
@@ -194,10 +198,7 @@ const discarded = (message) => {
 const stole = (message) => {
   const span = Array.from(message.getElementsByTagName("span"))[0];
   const span_child_nodes = Array.from(span.childNodes);
-  let robber = span_child_nodes[0].innerText;
-  if (span.innerText.includes("You stole")) {
-    robber = my_name;
-  }
+  const robber = span_child_nodes[0].innerText;
   const robbed = span_child_nodes[span_child_nodes.length - 1].innerText;
 
   const robbed_resource = predictRobbedCard(robbed);
@@ -224,36 +225,6 @@ const stole = (message) => {
 
 const main = () => {
   console.log("s");
-  addTransactionDOMElement("receive", {
-    user: "a",
-    resources: ["lumber", "brick"],
-  });
-  addTransactionDOMElement("receive", {
-    user: "b",
-    resources: ["wool", "wool"],
-  });
-  addTransactionDOMElement("receive", {
-    user: "c",
-    resources: ["wool"],
-  });
-
-  addTransactionDOMElement("steal", {
-    robber: "c",
-    robbed: "a",
-    resource: "lumber",
-  });
-
-  addTransactionDOMElement("trade", {
-    initiator: "c",
-    acceptor: "b",
-    initiatorGives: ["lumber"],
-    initiatorTakes: ["wool"],
-  });
-
-  addTransactionDOMElement("you-steal", {
-    robbed: "b",
-    resource: "lumber",
-  });
 
   const logs = document.getElementById("game-log-text");
 
@@ -278,10 +249,9 @@ const main = () => {
     if (checkType(message) == "steal") {
       stole(message);
     }
-    Object.keys(users).forEach((user) => {
-      console.log(user, users[user].resources);
-    });
   }
-  console.log(users);
+  Object.keys(users).forEach((user) => {
+    console.log(user, users[user].resources);
+  });
+  // console.log(users["c"].robbed);
 };
-main();

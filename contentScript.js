@@ -1,13 +1,70 @@
+const my_name = "a";
 let users = {};
 
-const addUser = (name) => {
-  users[name] = { resources: [], roads: 0, settlements: 0, cities: 0 };
+const resources_required = {
+  road: ["lumber", "brick"],
+  settlement: ["lumber", "brick", "wool", "grain"],
+  city: ["grain", "grain", "ore", "ore", "ore"],
 };
 
-const removeUserResource = (name, resource) => {
-  if (users[name].resources.indexOf(resource) != -1) {
-    users[name].resources.splice(users[name].resources.indexOf(resource), 1);
+const userHasEnoughResources = (user, building_name) => {
+  const user_resources = users[user].resources;
+
+  for (let resource of resources_required[building_name]) {
+    if (user_resources.indexOf(resource) == -1) {
+      return false;
+    }
+    user_resources.splice(user_resources.indexOf(resource), 1);
   }
+  return true;
+};
+const addUser = (name) => {
+  users[name] = {
+    resources: [],
+    road: 0,
+    settlement: 0,
+    city: 0,
+    robbed: [],
+    gotRobbed: [],
+  };
+};
+
+const usedInsufficientResource = (name, resource) => {
+  const robbedArray = users[name].robbed;
+  const possibleTargets = [];
+
+  robbedArray.forEach((robbedArrayElement) => {
+    if (robbedArrayElement.resource.includes(resource)) {
+      possibleTargets.push(robbedArrayElement);
+    }
+  });
+
+  if (possibleTargets.length == 1) {
+    removeUserResource(possibleTargets[0].user, [resource]);
+    return;
+  }
+
+  // possibleTargets.forEach((possibleTarget) => {
+  //   const other_targets_indices = possibleTargets
+  //     .filter(
+  //       (p) =>
+  //         possibleTarget.indexOf(p) != possibleTarget.indexOf(possibleTarget)
+  //     )
+  //     .map((pt) => possibleTargets.indexOf(pt));
+
+  //   possibleTarget.tied.push(...other_targets_indices);
+  // });
+};
+
+const removeUserResource = (name, resources) => {
+  console.log(name);
+  resources.forEach((resource) => {
+    if (users[name].resources.indexOf(resource) != -1) {
+      users[name].resources.splice(users[name].resources.indexOf(resource), 1);
+    } else {
+      usedInsufficientResource(name, resource);
+    }
+  });
 };
 const checkType = (message) => {
   if (
@@ -30,6 +87,19 @@ const getName = (message) => {
   return name;
 };
 
+const predictRobbedCard = (robbed_user) => {
+  const potential_robbed_resources = Array.from(
+    new Set(users[robbed_user].resources)
+  );
+
+  if (potential_robbed_resources.length == 0) return [];
+
+  if (potential_robbed_resources.length == 1)
+    return [potential_robbed_resources[0]];
+
+  return potential_robbed_resources;
+};
+
 const recieved = (message) => {
   const name = getName(message);
 
@@ -43,7 +113,7 @@ const recieved = (message) => {
   images.shift();
 
   //for each of the resource image, get it' alt text which is the resource name
-  for (resource_image of images) {
+  for (let resource_image of images) {
     const resource_name = resource_image.alt;
 
     users[name].resources.push(resource_name);
@@ -65,29 +135,14 @@ const placed = (message) => {
   //for the building image, get its alt text which is the building name
 
   const building_name = images[0].alt;
-  if (building_name == "settlement") {
-    users[name].settlements++;
-    if (users[name].settlements.length > 2) {
-      removeUserResource(name, "lumber");
-      removeUserResource(name, "brick");
-      removeUserResource(name, "wool");
-      removeUserResource(name, "grain");
-    }
-  }
-  if (building_name == "road") {
-    users[name].roads++;
-    if (users[name].settlements.length > 2) {
-      removeUserResource(name, "lumber");
-      removeUserResource(name, "brick");
-    }
-  }
+  users[name][building_name]++;
+
   if (building_name == "city") {
-    users[name].cities++;
-    removeUserResource(name, "grain");
-    removeUserResource(name, "grain");
-    removeUserResource(name, "ore");
-    removeUserResource(name, "ore");
-    removeUserResource(name, "ore");
+    removeUserResource(name, resources_required[building_name]);
+  } else {
+    if (users[name][building_name] > 2) {
+      removeUserResource(name, resources_required[building_name]);
+    }
   }
 };
 
@@ -108,10 +163,10 @@ const traded = (message) => {
     } else {
       const resource_name = node.alt;
       if (resource_type == "give") {
-        removeUserResource(initiator, resource_name);
+        removeUserResource(initiator, [resource_name]);
         users[acceptor].resources.push(resource_name);
       } else {
-        removeUserResource(acceptor, resource_name);
+        removeUserResource(acceptor, [resource_name]);
         users[initiator].resources.push(resource_name);
       }
     }
@@ -128,24 +183,52 @@ const discarded = (message) => {
   images.shift();
 
   //for each of the resource image, get it' alt text which is the resource name
-  for (resource_image of images) {
+  for (let resource_image of images) {
     const resource_name = resource_image.alt;
-    removeUserResource(name, resource_name);
+    removeUserResource(name, [resource_name]);
   }
 };
 
 const stole = (message) => {
   const span = Array.from(message.getElementsByTagName("span"))[0];
   const span_child_nodes = Array.from(span.childNodes);
-  const robber = span_child_nodes[0].innerText;
+  let robber = span_child_nodes[0].innerText;
+  if (span.innerText.includes("You stole")) {
+    robber = my_name;
+  }
   const robbed = span_child_nodes[span_child_nodes.length - 1].innerText;
+
+  const robbed_resource = predictRobbedCard(robbed);
+  if (!robbed_resource.length) {
+    return;
+  }
+
+  if (robbed_resource.length == 1) {
+    users[robber].resources.push(robbed_resource[0]);
+    removeUserResource(robbed, [robbed_resource[0]]);
+    return;
+  }
+
+  users[robber].robbed.push({
+    user: robbed,
+    resource: robbed_resource,
+    tiedWith: [],
+  });
+
+  users[robbed].gotRobbed.push({
+    user: robber,
+    resource: robbed_resource,
+  });
 };
 
 const main = () => {
+  console.log("s");
+
   const logs = document.getElementById("game-log-text");
+
   const messages = logs.getElementsByClassName("message-post");
 
-  for (message of messages) {
+  for (let message of messages) {
     if (checkType(message) == "receive") {
       recieved(message);
     }
@@ -165,15 +248,52 @@ const main = () => {
       stole(message);
     }
   }
+  return users;
+};
+
+const renderUsers = (users) => {
+  const container = document.createElement("div");
+  container.style =
+    "position:absolute; bottom:100px; left:300px;display:flex; flex-direction:column; gap:4px;z-index:1000;";
 
   Object.keys(users).forEach((user) => {
-    console.log(user, users[user].resources);
+    const user_element = document.createElement("div");
+    user_element.style =
+      "display:flex; align-items:center; gap:8px;border-bottom:1px solid black; padding:4px;";
+    user_element.innerHTML = `<div style="margin-right:20px;">${user}</div>`;
+    users[user].resources.forEach((resource) => {
+      const resource_element = document.createElement("img");
+      resource_element.src = chrome.runtime.getURL(
+        "assets/resources/" + resource + ".svg"
+      );
+      resource_element.width = "30";
+      resource_element.style = "margin-left:-20px";
+
+      user_element.appendChild(resource_element);
+    });
+
+    users[user].robbed.forEach((r) => {
+      const robbed_element = document.createElement("div");
+      robbed_element.style = "width:5px;height:30px;background-color:green ";
+      user_element.appendChild(robbed_element);
+    });
+
+    users[user].gotRobbed.forEach((r) => {
+      const robbed_element = document.createElement("div");
+      robbed_element.style = "width:5px;height:30px;background-color:red ";
+      user_element.appendChild(robbed_element);
+    });
+    container.appendChild(user_element);
   });
+  document.getElementsByTagName("body")[0].appendChild(container);
 };
 (() => {
   chrome.runtime.onMessage.addListener((params, sender, response) => {
     users = {};
     console.log(params.url);
-    main();
+
+    users = main();
+
+    renderUsers(users);
   });
 })();
