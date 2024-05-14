@@ -148,6 +148,41 @@ const addTransactionDOMElement = (type, payload, pid = "game-log-text") => {
       ></span
     >`;
   }
+
+  if (type == "bank") {
+    element.innerHTML = `<img
+      class=""
+      id=""
+      alt="bot"
+      src="/dist/images/icon_bot.svg?rev=3a9113a7cbb03cb69db7"
+      width="20"
+      height="20"
+    /><span class="" id=""
+      ><span class="semibold" style="word-break: break-all; color: #e09742"
+        >${payload.user}</span
+      >
+      gave bank
+      ${payload.give
+        .map(
+          (resource) =>
+            `<img
+          src="/dist/images/card_lumber.svg?rev=c3f06b26d0dc1df6e30b"
+          alt="${resource}"
+          height="20"
+          width="14.25"
+          class="lobby-chat-text-icon"
+        />`
+        )
+        .join("")} and took
+      <img
+        src="/dist/images/card_ore.svg?rev=456f643916038b42d704"
+        alt="${payload.take}"
+        height="20"
+        width="14.25"
+        class="lobby-chat-text-icon"
+      />
+    </span>`;
+  }
   document.getElementById(pid).appendChild(element);
 };
 export default addTransactionDOMElement;

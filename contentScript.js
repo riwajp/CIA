@@ -1,11 +1,14 @@
-const my_name = "a";
+const my_name = "Helms#3881";
 let users = {};
 
 const resources_required = {
   road: ["lumber", "brick"],
   settlement: ["lumber", "brick", "wool", "grain"],
   city: ["grain", "grain", "ore", "ore", "ore"],
+  dev_card: ["wool", "grain", "ore"],
 };
+
+const robbed_resources = {};
 
 const userHasEnoughResources = (user, building_name) => {
   const user_resources = users[user].resources;
@@ -41,6 +44,16 @@ const usedInsufficientResource = (name, resource) => {
 
   if (possibleTargets.length == 1) {
     removeUserResource(possibleTargets[0].user, [resource]);
+    users[name].robbed.shift();
+    users[possibleTargets[0].user].gotRobbed = users[
+      possibleTargets[0].user
+    ].gotRobbed.filter(
+      (r) =>
+        !(
+          r.user == name &&
+          r.resource.join("") == possibleTargets[0].resource.join("")
+        )
+    );
     return;
   }
 
@@ -57,7 +70,6 @@ const usedInsufficientResource = (name, resource) => {
 };
 
 const removeUserResource = (name, resources) => {
-  console.log(name);
   resources.forEach((resource) => {
     if (users[name].resources.indexOf(resource) != -1) {
       users[name].resources.splice(users[name].resources.indexOf(resource), 1);
@@ -72,10 +84,25 @@ const checkType = (message) => {
     message.innerText.includes("got")
   )
     return "receive";
-  if (message.innerText.includes("placed")) return "place";
+  if (
+    message.innerText.includes("placed") ||
+    message.innerText.includes("built")
+  )
+    return "place";
   if (message.innerText.includes("traded")) return "trade";
   if (message.innerText.includes("discarded")) return "discard";
-  if (message.innerText.includes("stole")) return "steal";
+  if (message.innerText.includes("stole") && message.innerText.includes("from"))
+    return "steal";
+  if (message.innerText.includes("gave bank")) return "bank";
+  if (message.innerText.includes("bought")) return "buyDevCard";
+  if (message.innerText.includes("took") && !message.innerText.includes("gave"))
+    return "useYearOfPlenty";
+
+  if (
+    message.innerText.includes("stole") &&
+    !message.innerText.includes("from")
+  )
+    return "useMonopoly";
 
   return undefined;
 };
@@ -158,7 +185,7 @@ const traded = (message) => {
 
   let resource_type = "give";
   span_child_nodes.forEach((node) => {
-    if (!node.src) {
+    if (!node.src && !node.data.includes("\n") && node.data != " ") {
       resource_type = "take";
     } else {
       const resource_name = node.alt;
@@ -168,6 +195,31 @@ const traded = (message) => {
       } else {
         removeUserResource(acceptor, [resource_name]);
         users[initiator].resources.push(resource_name);
+      }
+    }
+  });
+};
+
+const banked = (message) => {
+  const span = Array.from(message.getElementsByTagName("span"))[0];
+
+  const span_child_nodes = Array.from(span.childNodes);
+  const user = span_child_nodes[0].innerText;
+
+  span_child_nodes.pop();
+
+  span_child_nodes.splice(0, 2);
+
+  let resource_type = "give";
+  span_child_nodes.forEach((node) => {
+    if (!node.src && !node.data.includes("\n") && node.data != " ") {
+      resource_type = "take";
+    } else {
+      const resource_name = node.alt;
+      if (resource_type == "give") {
+        removeUserResource(user, [resource_name]);
+      } else {
+        users[user].resources.push(resource_name);
       }
     }
   });
@@ -196,6 +248,7 @@ const stole = (message) => {
   if (span.innerText.includes("You stole")) {
     robber = my_name;
   }
+
   const robbed = span_child_nodes[span_child_nodes.length - 1].innerText;
 
   const robbed_resource = predictRobbedCard(robbed);
@@ -221,9 +274,53 @@ const stole = (message) => {
   });
 };
 
-const main = () => {
-  console.log("s");
+const boughtDevCard = (message) => {
+  const name = getName(message);
+  removeUserResource(name, resources_required["dev_card"]);
+  const div = document.createElement("div");
+  div.innerText = name;
+  message.appendChild(div);
+};
 
+const usedYearOfPlenty = (message) => {
+  const name = getName(message);
+
+  //get list of all images from the div
+  const images = Array.from(message.getElementsByTagName("img"));
+
+  //remove first image as it's the user's image, the rest of it are resources' images
+  images.shift();
+
+  //for each of the resource image, get it' alt text which is the resource name
+
+  for (let resource_image of images) {
+    const resource_name = resource_image.alt;
+
+    users[name].resources.push(resource_name);
+  }
+};
+
+const usedMonopoly = (message) => {
+  // const name = getName(message);
+  // const images = Array.from(message.getElementsByTagName("img"));
+  // const resource = images[1].alt;
+  // const span = Array.from(message.getElementsByTagName("span"))[0];
+  // Object.keys(users)
+  //   .filter((user) => user != name)
+  //   .forEach((user) => {
+  //     users[user].resources.forEach((r) => {
+  //       if (r == resource) {
+  //         users[name].resources.push(resource);
+  //         console.log(user, resource);
+  //       }
+  //     });
+  //     users[user].resources = users[user].resources.filter(
+  //       (r) => r != resource
+  //     );
+  //   });
+};
+
+const main = () => {
   const logs = document.getElementById("game-log-text");
 
   const messages = logs.getElementsByClassName("message-post");
@@ -247,14 +344,24 @@ const main = () => {
     if (checkType(message) == "steal") {
       stole(message);
     }
+    if (checkType(message) == "bank") {
+      banked(message);
+    }
+    if (checkType(message) == "buyDevCard") {
+      boughtDevCard(message);
+    }
+    if (checkType(message) == "useYearOfPlenty") {
+      usedYearOfPlenty(message);
+    }
+    if (checkType(message) == "useMonopoly") {
+      usedMonopoly(message);
+    }
   }
   return users;
 };
 
-const renderUsers = (users) => {
-  const container = document.createElement("div");
-  container.style =
-    "position:absolute; bottom:100px; left:300px;display:flex; flex-direction:column; gap:4px;z-index:1000;";
+const renderUsers = (container, users) => {
+  container.innerHTML = ``;
 
   Object.keys(users).forEach((user) => {
     const user_element = document.createElement("div");
@@ -274,7 +381,8 @@ const renderUsers = (users) => {
 
     users[user].robbed.forEach((r) => {
       const robbed_element = document.createElement("div");
-      robbed_element.style = "width:5px;height:30px;background-color:green ";
+      robbed_element.style =
+        "width:5px;height:30px;background-color:lightgreen ";
       user_element.appendChild(robbed_element);
     });
 
@@ -285,15 +393,20 @@ const renderUsers = (users) => {
     });
     container.appendChild(user_element);
   });
-  document.getElementsByTagName("body")[0].appendChild(container);
 };
+
 (() => {
+  const container = document.createElement("div");
+  container.style =
+    "position:absolute; bottom:100px; left:300px;display:flex; flex-direction:column; gap:4px;z-index:1000;";
+
+  document.getElementsByTagName("body")[0].appendChild(container);
+
   chrome.runtime.onMessage.addListener((params, sender, response) => {
     users = {};
-    console.log(params.url);
 
     users = main();
 
-    renderUsers(users);
+    renderUsers(container, users);
   });
 })();
