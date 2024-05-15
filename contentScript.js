@@ -285,8 +285,6 @@ const boughtDevCard = (message) => {
   const name = getName(message);
   removeUserResource(name, resources_required["dev_card"]);
   const div = document.createElement("div");
-
-  message.appendChild(div);
 };
 
 const usedYearOfPlenty = (message) => {
@@ -330,9 +328,14 @@ const usedMonopoly = (message) => {
 const main = () => {
   const logs = document.getElementById("game-log-text");
 
-  const messages = logs.getElementsByClassName("message-post");
+  const messages = Array.from(logs?.getElementsByClassName("message-post"));
+  if (messages?.length) {
+    messages.splice(0, processed_message_index + 1);
+  }
 
   for (let message of messages) {
+    processed_message_index++;
+    console.log("1 more message processed");
     if (checkType(message) == "receive") {
       recieved(message);
     }
@@ -402,6 +405,7 @@ const renderUsers = (container, users) => {
   });
 };
 
+let processed_message_index = -1;
 (() => {
   const container = document.createElement("div");
   container.style =
@@ -410,8 +414,6 @@ const renderUsers = (container, users) => {
   document.getElementsByTagName("body")[0].appendChild(container);
 
   chrome.runtime.onMessage.addListener((params, sender, response) => {
-    users = {};
-
     users = main();
 
     renderUsers(container, users);
