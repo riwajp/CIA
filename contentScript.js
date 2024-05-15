@@ -1,4 +1,4 @@
-const my_name = "Helms#3881";
+const my_name = localStorage.getItem("name");
 let users = {};
 const resources = ["lumber", "brick", "wool", "grain", "ore"];
 const resources_required = {
@@ -14,7 +14,7 @@ let monopolyUser = null;
 
 const container = document.createElement("div");
 container.style =
-  "position:absolute; bottom:100px; left:300px;display:flex; flex-direction:column; gap:4px;z-index:1000;";
+  "position:absolute; top:100px; left:300px;display:flex; flex-direction:column; gap:4px;z-index:1000;";
 
 document.getElementsByTagName("body")[0].appendChild(container);
 const userHasEnoughResources = (user, building_name) => {
@@ -421,6 +421,11 @@ const main = () => {
 const renderUsers = (container, users) => {
   container.innerHTML = ``;
 
+  if (!my_name) {
+    container.innerHTML =
+      "<div style='color:red;z-index:3;background-color:white; width:fit-content;'>CIA<br>Enter your username first.</div>";
+    return;
+  }
   Object.keys(users).forEach((user) => {
     const user_element = document.createElement("div");
     user_element.style =
