@@ -8,9 +8,9 @@ const resources_required = {
   dev_card: ["wool", "grain", "ore"],
 };
 
-let isMonopolyCountPending = true;
-let monopolyResource = "lumber";
-let monopolyUser = "c";
+let isMonopolyCountPending = false;
+let monopolyResource = null;
+let monopolyUser = null;
 
 const container = document.createElement("div");
 container.style =
