@@ -20,13 +20,7 @@ addTransactionDOMElement("steal", {
 });
 
 addTransactionDOMElement("steal", {
-  robber: "b",
-  resource: "wool",
-  robbed: "a",
-});
-
-addTransactionDOMElement("steal", {
-  robber: "b",
+  robber: "c",
   resource: "lumber",
-  robbed: "a",
+  robbed: "b",
 });

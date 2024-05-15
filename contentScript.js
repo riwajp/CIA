@@ -8,6 +8,15 @@ const resources_required = {
   dev_card: ["wool", "grain", "ore"],
 };
 
+let isMonopolyCountPending = true;
+let monopolyResource = "lumber";
+let monopolyUser = "c";
+
+const container = document.createElement("div");
+container.style =
+  "position:absolute; bottom:100px; left:300px;display:flex; flex-direction:column; gap:4px;z-index:1000;";
+
+document.getElementsByTagName("body")[0].appendChild(container);
 const userHasEnoughResources = (user, building_name) => {
   const user_resources = users[user].resources;
 
@@ -306,9 +315,12 @@ const usedYearOfPlenty = (message) => {
 };
 
 const usedMonopoly = (message) => {
-  // const name = getName(message);
-  // const images = Array.from(message.getElementsByTagName("img"));
-  // const resource = images[1].alt;
+  const name = getName(message);
+  const images = Array.from(message.getElementsByTagName("img"));
+  const resource = images[1].alt;
+  isMonopolyCountPending = true;
+  monopolyResource = resource;
+  monopolyUser = name;
   // const span = Array.from(message.getElementsByTagName("span"))[0];
   // Object.keys(users)
   //   .filter((user) => user != name)
@@ -323,6 +335,42 @@ const usedMonopoly = (message) => {
   //       (r) => r != resource
   //     );
   //   });
+};
+
+const resolveMonopoly = () => {
+  console.log("here");
+  const users_cards_count = {};
+  Object.keys(users).forEach((user) => {
+    const num_cards = document.getElementById(user).value;
+    console.log(num_cards);
+    users_cards_count[user] = num_cards;
+  });
+
+  console.log(users_cards_count);
+
+  Object.keys(users)
+    .filter((user) => user != monopolyUser)
+    .forEach((user) => {
+      users[monopolyUser].resources.push(
+        ...users[user].resources.filter((r) => r == monopolyResource)
+      );
+
+      users[user].resources = users[user].resources.filter(
+        (r) => r != monopolyResource
+      );
+
+      while (
+        users[user].resources.length + users[user].extra >
+        users_cards_count[user]
+      ) {
+        users[user].extra--;
+        users[monopolyUser].resources.push(monopolyResource);
+      }
+    });
+  console.log(users);
+
+  isMonopolyCountPending = false;
+  renderUsers(container, users);
 };
 
 const main = () => {
@@ -377,17 +425,32 @@ const renderUsers = (container, users) => {
     const user_element = document.createElement("div");
     user_element.style =
       "display:flex; align-items:center; gap:8px;border-bottom:1px solid black; padding:4px;";
-    user_element.innerHTML = `<div style="margin-right:20px;">${user}</div>`;
-    users[user].resources.forEach((resource) => {
-      const resource_element = document.createElement("img");
-      resource_element.src = chrome.runtime.getURL(
-        "assets/resources/" + resource + ".svg"
-      );
-      resource_element.width = "30";
-      resource_element.style = "margin-left:-20px";
+    user_element.innerHTML = `<div style="margin-right:10px;">${user}</div>`;
 
-      user_element.appendChild(resource_element);
+    //==============================
+    const user_resources_count_element = document.createElement("div");
+    user_resources_count_element.style =
+      "padding:4px; background-color:#8c7ae6 ;margin-right:15px  ;border:0;border-radius:5px; color:white; font-weight:700;";
+    user_resources_count_element.innerHTML =
+      "(" + (users[user].resources.length + users[user].extra) + ")";
+    user_element.appendChild(user_resources_count_element);
+    //==============================
+
+    //==============================
+    resources.forEach((resource) => {
+      user_resources = users[user].resources.filter((r) => r == resource);
+      user_resources.forEach((resource) => {
+        const resource_element = document.createElement("img");
+        resource_element.src = chrome.runtime.getURL(
+          "assets/resources/" + resource + ".svg"
+        );
+        resource_element.width = "30";
+        resource_element.style = "margin-left:-20px";
+
+        user_element.appendChild(resource_element);
+      });
     });
+    //==============================
 
     if (users[user].extra != 0) {
       const extra_count_element = document.createElement("div");
@@ -396,6 +459,14 @@ const renderUsers = (container, users) => {
       extra_count_element.innerHTML = "+" + users[user].extra;
       user_element.appendChild(extra_count_element);
     }
+
+    if (isMonopolyCountPending) {
+      const input_element = document.createElement("input");
+      input_element.style = "padding:4px; width:50px; ";
+      input_element.type = "number";
+      input_element.id = user;
+      user_element.appendChild(input_element);
+    }
     //   users[user].gotRobbed.forEach((r) => {
     //     const robbed_element = document.createElement("div");
     //     robbed_element.style = "width:5px;height:30px;background-color:red ";
@@ -403,16 +474,19 @@ const renderUsers = (container, users) => {
     //   });
     container.appendChild(user_element);
   });
+
+  if (isMonopolyCountPending) {
+    const submit_element = document.createElement("button");
+    submit_element.style = "padding:4px; ";
+    submit_element.textContent = "Done";
+    submit_element.onclick = () => resolveMonopoly();
+
+    container.appendChild(submit_element);
+  }
 };
 
 let processed_message_index = -1;
 (() => {
-  const container = document.createElement("div");
-  container.style =
-    "position:absolute; bottom:100px; left:300px;display:flex; flex-direction:column; gap:4px;z-index:1000;";
-
-  document.getElementsByTagName("body")[0].appendChild(container);
-
   chrome.runtime.onMessage.addListener((params, sender, response) => {
     users = main();
 
