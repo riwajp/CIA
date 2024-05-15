@@ -1,14 +1,12 @@
 const my_name = "Helms#3881";
 let users = {};
-
+const resources = ["lumber", "brick", "wool", "grain", "ore"];
 const resources_required = {
   road: ["lumber", "brick"],
   settlement: ["lumber", "brick", "wool", "grain"],
   city: ["grain", "grain", "ore", "ore", "ore"],
   dev_card: ["wool", "grain", "ore"],
 };
-
-const robbed_resources = {};
 
 const userHasEnoughResources = (user, building_name) => {
   const user_resources = users[user].resources;
@@ -17,7 +15,7 @@ const userHasEnoughResources = (user, building_name) => {
     if (user_resources.indexOf(resource) == -1) {
       return false;
     }
-    user_resources.splice(user_resources.indexOf(resource), 1);
+    // user_resources.splice(user_resources.indexOf(resource), 1);
   }
   return true;
 };
@@ -27,49 +25,39 @@ const addUser = (name) => {
     road: 0,
     settlement: 0,
     city: 0,
-    robbed: [],
-    gotRobbed: [],
+
+    extra: 0,
   };
 };
 
 const usedInsufficientResource = (name, resource) => {
-  const robbedArray = users[name].robbed;
-  const possibleTargets = [];
-
-  robbedArray.forEach((robbedArrayElement) => {
-    if (robbedArrayElement.resource.includes(resource)) {
-      possibleTargets.push(robbedArrayElement);
-    }
-  });
-
-  if (possibleTargets.length == 1) {
-    removeUserResource(possibleTargets[0].user, [resource]);
-    users[name].robbed.shift();
-    users[possibleTargets[0].user].gotRobbed = users[
-      possibleTargets[0].user
-    ].gotRobbed.filter(
-      (r) =>
-        !(
-          r.user == name &&
-          r.resource.join("") == possibleTargets[0].resource.join("")
-        )
-    );
-    return;
-  }
-
-  // possibleTargets.forEach((possibleTarget) => {
-  //   const other_targets_indices = possibleTargets
-  //     .filter(
-  //       (p) =>
-  //         possibleTarget.indexOf(p) != possibleTarget.indexOf(possibleTarget)
-  //     )
-  //     .map((pt) => possibleTargets.indexOf(pt));
-
-  //   possibleTarget.tied.push(...other_targets_indices);
+  // const robbedArray = users[name].robbed;
+  // const possibleTargets = [];
+  // robbedArray.forEach((robbedArrayElement) => {
+  //   if (robbedArrayElement.resource.includes(resource)) {
+  //     possibleTargets.push(robbedArrayElement);
+  //   }
   // });
+  // if (possibleTargets.length == 1) {
+  //   removeUserResource(possibleTargets[0].user, [resource]);
+  //   users[name].robbed.shift();
+  //   users[possibleTargets[0].user].gotRobbed = users[
+  //     possibleTargets[0].user
+  //   ].gotRobbed.filter(
+  //     (r) =>
+  //       !(
+  //         r.user == name &&
+  //         r.resource.join("") == possibleTargets[0].resource.join("")
+  //       )
+  //   );
+  //   return;
+  // }
+
+  users[name].extra--;
 };
 
 const removeUserResource = (name, resources) => {
+  console.log("remove", resources);
   resources.forEach((resource) => {
     if (users[name].resources.indexOf(resource) != -1) {
       users[name].resources.splice(users[name].resources.indexOf(resource), 1);
@@ -135,7 +123,8 @@ const recieved = (message) => {
 
   //get list of all images from the div
   const images = Array.from(message.getElementsByTagName("img"));
-
+  if (images.filter((image) => image.alt.includes("longest")).length) return;
+  if (images.filter((image) => image.alt.includes("largest")).length) return;
   //remove first image as it's the user's image, the rest of it are resources' images
   images.shift();
 
@@ -171,6 +160,7 @@ const placed = (message) => {
       removeUserResource(name, resources_required[building_name]);
     }
   }
+  // message.innerHTML = message.innerHTML + "<br> built" + building_name;
 };
 
 const traded = (message) => {
@@ -201,6 +191,8 @@ const traded = (message) => {
 };
 
 const banked = (message) => {
+  console.log("===================================================");
+  console.log(message);
   const span = Array.from(message.getElementsByTagName("span"))[0];
 
   const span_child_nodes = Array.from(span.childNodes);
@@ -210,16 +202,23 @@ const banked = (message) => {
 
   span_child_nodes.splice(0, 2);
 
+  console.log(span_child_nodes);
   let resource_type = "give";
   span_child_nodes.forEach((node) => {
-    if (!node.src && !node.data.includes("\n") && node.data != " ") {
-      resource_type = "take";
+    if (!node.src) {
+      if (!node.data.includes("\n") && node.data != " ") {
+        resource_type = "take";
+      }
     } else {
       const resource_name = node.alt;
+      console.log(node);
+
       if (resource_type == "give") {
         removeUserResource(user, [resource_name]);
+        console.log(resource_name);
       } else {
         users[user].resources.push(resource_name);
+        console.log(resource_name);
       }
     }
   });
@@ -245,40 +244,48 @@ const stole = (message) => {
   const span = Array.from(message.getElementsByTagName("span"))[0];
   const span_child_nodes = Array.from(span.childNodes);
   let robber = span_child_nodes[0].innerText;
+
   if (span.innerText.includes("You stole")) {
     robber = my_name;
   }
 
-  const robbed = span_child_nodes[span_child_nodes.length - 1].innerText;
-
-  const robbed_resource = predictRobbedCard(robbed);
-  if (!robbed_resource.length) {
-    return;
+  let robbed = span_child_nodes[span_child_nodes.length - 1].innerText;
+  if (span.innerText.includes("from you")) {
+    robbed = my_name;
   }
 
-  if (robbed_resource.length == 1) {
+  const robbed_resource = predictRobbedCard(robbed);
+
+  if (robbed_resource.length == 0) {
+    users[robber].extra++;
+
+    users[robbed].extra--;
+    return;
+  }
+  if (robbed_resource.length == 1 && users[robbed].extra == 0) {
     users[robber].resources.push(robbed_resource[0]);
     removeUserResource(robbed, [robbed_resource[0]]);
     return;
   }
 
-  users[robber].robbed.push({
-    user: robbed,
-    resource: robbed_resource,
-    tiedWith: [],
+  users[robber].extra += 1;
+
+  robbed_resource.forEach((resource) => {
+    users[robbed].resources.splice(
+      users[robbed].resources.indexOf(resource),
+      1
+    );
+    users[robbed].extra++;
   });
 
-  users[robbed].gotRobbed.push({
-    user: robber,
-    resource: robbed_resource,
-  });
+  users[robbed].extra--;
 };
 
 const boughtDevCard = (message) => {
   const name = getName(message);
   removeUserResource(name, resources_required["dev_card"]);
   const div = document.createElement("div");
-  div.innerText = name;
+
   message.appendChild(div);
 };
 
@@ -379,18 +386,18 @@ const renderUsers = (container, users) => {
       user_element.appendChild(resource_element);
     });
 
-    users[user].robbed.forEach((r) => {
-      const robbed_element = document.createElement("div");
-      robbed_element.style =
-        "width:5px;height:30px;background-color:lightgreen ";
-      user_element.appendChild(robbed_element);
-    });
-
-    users[user].gotRobbed.forEach((r) => {
-      const robbed_element = document.createElement("div");
-      robbed_element.style = "width:5px;height:30px;background-color:red ";
-      user_element.appendChild(robbed_element);
-    });
+    if (users[user].extra != 0) {
+      const extra_count_element = document.createElement("div");
+      extra_count_element.style =
+        "padding:4px; background-color:#66cc99   ;border:0;border-radius:5px; color:white; font-weight:700;";
+      extra_count_element.innerHTML = "+" + users[user].extra;
+      user_element.appendChild(extra_count_element);
+    }
+    //   users[user].gotRobbed.forEach((r) => {
+    //     const robbed_element = document.createElement("div");
+    //     robbed_element.style = "width:5px;height:30px;background-color:red ";
+    //     user_element.appendChild(robbed_element);
+    //   });
     container.appendChild(user_element);
   });
 };

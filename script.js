@@ -18,3 +18,15 @@ addTransactionDOMElement("steal", {
   resource: "wool",
   robbed: "c",
 });
+
+addTransactionDOMElement("steal", {
+  robber: "b",
+  resource: "wool",
+  robbed: "a",
+});
+
+addTransactionDOMElement("steal", {
+  robber: "b",
+  resource: "lumber",
+  robbed: "a",
+});
