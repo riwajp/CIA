@@ -12,9 +12,11 @@ let isMonopolyCountPending = false;
 let monopolyResource = null;
 let monopolyUser = null;
 
+let road_builder_road_left = 0;
+
 const container = document.createElement("div");
 container.style =
-  "position:absolute; bottom:100px; left:300px;display:flex; flex-direction:column; gap:4px;z-index:1000;";
+  "position:fixed; bottom:100px; left:300px;display:flex; flex-direction:column; gap:4px;z-index:1000;";
 
 document.getElementsByTagName("body")[0].appendChild(container);
 const userHasEnoughResources = (user, building_name) => {
@@ -66,7 +68,7 @@ const usedInsufficientResource = (name, resource) => {
 };
 
 const removeUserResource = (name, resources) => {
-  console.log("remove", resources);
+  console.log(name, "remove", resources);
   resources.forEach((resource) => {
     if (users[name].resources.indexOf(resource) != -1) {
       users[name].resources.splice(users[name].resources.indexOf(resource), 1);
@@ -101,6 +103,11 @@ const checkType = (message) => {
   )
     return "useMonopoly";
 
+  if (
+    message.getElementsByTagName("img")[1] &&
+    message.getElementsByTagName("img")[1].alt == "card road building"
+  )
+    return "useRoadBuilding";
   return undefined;
 };
 
@@ -166,6 +173,10 @@ const placed = (message) => {
     removeUserResource(name, resources_required[building_name]);
   } else {
     if (users[name][building_name] > 2) {
+      if (building_name == "road" && road_builder_road_left > 0) {
+        road_builder_road_left--;
+        return;
+      }
       removeUserResource(name, resources_required[building_name]);
     }
   }
@@ -181,11 +192,13 @@ const traded = (message) => {
   span_child_nodes.pop();
   span_child_nodes.pop();
   span_child_nodes.splice(0, 2);
-
+  console.log(span_child_nodes);
   let resource_type = "give";
   span_child_nodes.forEach((node) => {
-    if (!node.src && !node.data.includes("\n") && node.data != " ") {
-      resource_type = "take";
+    if (!node.src) {
+      if (node.data.includes("took") || node.data.includes("for")) {
+        resource_type = "take";
+      }
     } else {
       const resource_name = node.alt;
       if (resource_type == "give") {
@@ -200,8 +213,6 @@ const traded = (message) => {
 };
 
 const banked = (message) => {
-  console.log("===================================================");
-  console.log(message);
   const span = Array.from(message.getElementsByTagName("span"))[0];
 
   const span_child_nodes = Array.from(span.childNodes);
@@ -210,24 +221,20 @@ const banked = (message) => {
   span_child_nodes.pop();
 
   span_child_nodes.splice(0, 2);
-
   console.log(span_child_nodes);
   let resource_type = "give";
   span_child_nodes.forEach((node) => {
     if (!node.src) {
-      if (!node.data.includes("\n") && node.data != " ") {
+      if (node.data.includes("took") || node.data.includes("for")) {
         resource_type = "take";
       }
     } else {
       const resource_name = node.alt;
-      console.log(node);
 
       if (resource_type == "give") {
         removeUserResource(user, [resource_name]);
-        console.log(resource_name);
       } else {
         users[user].resources.push(resource_name);
-        console.log(resource_name);
       }
     }
   });
@@ -338,15 +345,11 @@ const usedMonopoly = (message) => {
 };
 
 const resolveMonopoly = () => {
-  console.log("here");
   const users_cards_count = {};
   Object.keys(users).forEach((user) => {
     const num_cards = document.getElementById(user).value;
-    console.log(num_cards);
     users_cards_count[user] = num_cards;
   });
-
-  console.log(users_cards_count);
 
   Object.keys(users)
     .filter((user) => user != monopolyUser)
@@ -367,23 +370,26 @@ const resolveMonopoly = () => {
         users[monopolyUser].resources.push(monopolyResource);
       }
     });
-  console.log(users);
 
   isMonopolyCountPending = false;
   renderUsers(container, users);
 };
 
+const useRoadBuilder = () => {
+  road_builder_road_left = 2;
+};
 const main = () => {
   const logs = document.getElementById("game-log-text");
 
   const messages = Array.from(logs?.getElementsByClassName("message-post"));
+  console.log(messages[messages.length - 1]);
   if (messages?.length) {
     messages.splice(0, processed_message_index + 1);
   }
 
   for (let message of messages) {
     processed_message_index++;
-    console.log("1 more message processed");
+
     if (checkType(message) == "receive") {
       recieved(message);
     }
@@ -413,6 +419,9 @@ const main = () => {
     }
     if (checkType(message) == "useMonopoly") {
       usedMonopoly(message);
+    }
+    if (checkType(message) == "useRoadBuilding") {
+      useRoadBuilder(message);
     }
   }
   return users;
