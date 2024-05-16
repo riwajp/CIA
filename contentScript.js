@@ -184,8 +184,9 @@ const traded = (message) => {
 
   let resource_type = "give";
   span_child_nodes.forEach((node) => {
-    if (!node.src && !node.data.includes("\n") && node.data != " ") {
-      resource_type = "take";
+    if (!node.src) {
+      if (node.data.includes("for") || node.data.includes("took"))
+        resource_type = "take";
     } else {
       const resource_name = node.alt;
       if (resource_type == "give") {
@@ -215,7 +216,7 @@ const banked = (message) => {
   let resource_type = "give";
   span_child_nodes.forEach((node) => {
     if (!node.src) {
-      if (!node.data.includes("\n") && node.data != " ") {
+      if (node.data.includes("for") || node.data.includes("took")) {
         resource_type = "take";
       }
     } else {
