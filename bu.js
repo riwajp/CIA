@@ -95,7 +95,7 @@ const getName = (message) => {
 
 const predictRobbedCard = (robbed_user) => {
   const potential_robbed_resources = Array.from(
-    new Set(users[robbed_user].resources)
+    new Set(users[robbed_user].resources),
   );
 
   if (potential_robbed_resources.length == 0) return [];
@@ -106,7 +106,7 @@ const predictRobbedCard = (robbed_user) => {
   return potential_robbed_resources;
 };
 
-const recieved = (message) => {
+const received = (message) => {
   const name = getName(message);
 
   //if users doesn't have that user, add it.
@@ -232,7 +232,7 @@ const main = () => {
 
   for (let message of messages) {
     if (checkType(message) == "receive") {
-      recieved(message);
+      received(message);
     }
     if (checkType(message) == "place") {
       placed(message);

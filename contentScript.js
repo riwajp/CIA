@@ -119,7 +119,7 @@ const getName = (message) => {
 
 const predictRobbedCard = (robbed_user) => {
   const potential_robbed_resources = Array.from(
-    new Set(users[robbed_user].resources)
+    new Set(users[robbed_user].resources),
   );
 
   if (potential_robbed_resources.length == 0) return [];
@@ -130,7 +130,7 @@ const predictRobbedCard = (robbed_user) => {
   return potential_robbed_resources;
 };
 
-const recieved = (message) => {
+const received = (message) => {
   const name = getName(message);
 
   //if users doesn't have that user, add it.
@@ -286,7 +286,7 @@ const stole = (message) => {
   robbed_resource.forEach((resource) => {
     users[robbed].resources.splice(
       users[robbed].resources.indexOf(resource),
-      1
+      1,
     );
     users[robbed].extra++;
   });
@@ -351,11 +351,11 @@ const resolveMonopoly = () => {
     .filter((user) => user != monopolyUser)
     .forEach((user) => {
       users[monopolyUser].resources.push(
-        ...users[user].resources.filter((r) => r == monopolyResource)
+        ...users[user].resources.filter((r) => r == monopolyResource),
       );
 
       users[user].resources = users[user].resources.filter(
-        (r) => r != monopolyResource
+        (r) => r != monopolyResource,
       );
 
       while (
@@ -386,7 +386,7 @@ const main = () => {
     processed_message_index++;
 
     if (checkType(message) == "receive") {
-      recieved(message);
+      received(message);
     }
     if (checkType(message) == "place") {
       placed(message);
@@ -466,7 +466,7 @@ const renderUsers = (container, users) => {
       user_resources.forEach((resource) => {
         const resource_element = document.createElement("img");
         resource_element.src = chrome.runtime.getURL(
-          "assets/resources/" + resource + ".svg"
+          "assets/resources/" + resource + ".svg",
         );
         resource_element.width = "30";
         resource_element.style = "margin-left:-20px";
