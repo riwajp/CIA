@@ -4,12 +4,13 @@
   "version": "1.0",
   "permissions": ["storage", "tabs"],
   "host_permissions": ["https://*.colonist.io/*", "http://*.localhost:5500/*"],
+  "icons": {
+    "48": "./assets/icons/icon-512.png"
+  },
   "background": {
     "service_worker": "background.js"
   },
-  "action": {
-    "default_popup": "popup.html"
-  },
+
   "content_scripts": [
     {
       "matches": ["https://*.colonist.io/*", "http://*.localhost:5500/*"],
