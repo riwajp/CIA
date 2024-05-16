@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Catanalyze",
+  "name": "CIA",
   "version": "1.0",
   "permissions": ["storage", "tabs"],
   "host_permissions": ["https://*.colonist.io/*", "http://*.localhost:5500/*"],
