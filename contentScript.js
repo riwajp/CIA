@@ -1,4 +1,4 @@
-const my_name = localStorage.getItem("name");
+let my_name = null;
 let users = {};
 const resources = ["lumber", "brick", "wool", "grain", "ore"];
 const resources_required = {
@@ -68,7 +68,6 @@ const usedInsufficientResource = (name, resource) => {
 };
 
 const removeUserResource = (name, resources) => {
-  console.log(name, "remove", resources);
   resources.forEach((resource) => {
     if (users[name].resources.indexOf(resource) != -1) {
       users[name].resources.splice(users[name].resources.indexOf(resource), 1);
@@ -192,7 +191,6 @@ const traded = (message) => {
   span_child_nodes.pop();
   span_child_nodes.pop();
   span_child_nodes.splice(0, 2);
-  console.log(span_child_nodes);
   let resource_type = "give";
   span_child_nodes.forEach((node) => {
     if (!node.src) {
@@ -221,7 +219,6 @@ const banked = (message) => {
   span_child_nodes.pop();
 
   span_child_nodes.splice(0, 2);
-  console.log(span_child_nodes);
   let resource_type = "give";
   span_child_nodes.forEach((node) => {
     if (!node.src) {
@@ -335,7 +332,6 @@ const usedMonopoly = (message) => {
   //     users[user].resources.forEach((r) => {
   //       if (r == resource) {
   //         users[name].resources.push(resource);
-  //         console.log(user, resource);
   //       }
   //     });
   //     users[user].resources = users[user].resources.filter(
@@ -382,7 +378,6 @@ const main = () => {
   const logs = document.getElementById("game-log-text");
 
   const messages = Array.from(logs?.getElementsByClassName("message-post"));
-  console.log(messages[messages.length - 1]);
   if (messages?.length) {
     messages.splice(0, processed_message_index + 1);
   }
@@ -431,8 +426,23 @@ const renderUsers = (container, users) => {
   container.innerHTML = ``;
 
   if (!my_name) {
-    container.innerHTML =
-      "<div style='color:red;z-index:3;background-color:white; width:fit-content;'>CIA<br>Enter your username first.</div>";
+    container.innerHTML = `<div style='color:red;z-index:3;background-color:white; width:fit-content;'>CIA<br>Enter your username first.</div>
+       <input type='text' id='input' placeholder="Username" />
+      <button id="submit">Done</button>`;
+
+    const input = document.getElementById("input");
+
+    my_name = localStorage.getItem("name");
+    input.value = my_name ?? "";
+
+    const submit_button = document.getElementById("submit");
+    console.log(submit_button);
+    submit_button.onclick = (e) => {
+      localStorage.setItem("name", input.value);
+
+      my_name = input.value;
+      renderUsers(container, users);
+    };
     return;
   }
   Object.keys(users).forEach((user) => {
