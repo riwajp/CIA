@@ -439,6 +439,14 @@ const renderUsers = (container, users) => {
     };
     return;
   }
+
+  if (isMonopolyCountPending) {
+    const monopolyInstructionElement = document.createElement("div");
+    monopolyInstructionElement.style = `backgound-color:red; color:white; padding:4px;max-width:200px;`;
+    monopolyInstructionElement.innerText =
+      "Monopoly card was used. Wait for your turn and then enter the number of cards each player has:";
+    container.appendChild(monopolyInstructionElement);
+  }
   Object.keys(users).forEach((user) => {
     const user_element = document.createElement("div");
     user_element.style =
