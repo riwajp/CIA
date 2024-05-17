@@ -11,6 +11,7 @@ const resources_required = {
 let isMonopolyCountPending = false;
 let monopolyResource = null;
 let monopolyUser = null;
+let monopolyCheckpointUsers = null;
 
 let road_builder_road_left = 0;
 
@@ -19,6 +20,7 @@ container.style =
   "position:fixed; bottom:100px; left:300px;display:flex; flex-direction:column; gap:4px;z-index:1000;";
 
 document.getElementsByTagName("body")[0].appendChild(container);
+
 const userHasEnoughResources = (user, building_name) => {
   const user_resources = users[user].resources;
 
@@ -119,7 +121,7 @@ const getName = (message) => {
 
 const predictRobbedCard = (robbed_user) => {
   const potential_robbed_resources = Array.from(
-    new Set(users[robbed_user].resources),
+    new Set(users[robbed_user].resources)
   );
 
   if (potential_robbed_resources.length == 0) return [];
@@ -286,7 +288,7 @@ const stole = (message) => {
   robbed_resource.forEach((resource) => {
     users[robbed].resources.splice(
       users[robbed].resources.indexOf(resource),
-      1,
+      1
     );
     users[robbed].extra++;
   });
@@ -325,41 +327,32 @@ const usedMonopoly = (message) => {
   isMonopolyCountPending = true;
   monopolyResource = resource;
   monopolyUser = name;
-  // const span = Array.from(message.getElementsByTagName("span"))[0];
-  // Object.keys(users)
-  //   .filter((user) => user != name)
-  //   .forEach((user) => {
-  //     users[user].resources.forEach((r) => {
-  //       if (r == resource) {
-  //         users[name].resources.push(resource);
-  //       }
-  //     });
-  //     users[user].resources = users[user].resources.filter(
-  //       (r) => r != resource
-  //     );
-  //   });
+  monopolyCheckpointUsers = users;
 };
 
 const resolveMonopoly = () => {
   const users_cards_count = {};
-  Object.keys(users).forEach((user) => {
+  Object.keys(monopolyCheckpointUsers).forEach((user) => {
     const num_cards = document.getElementById(user).value;
     users_cards_count[user] = num_cards;
   });
 
-  Object.keys(users)
+  Object.keys(monopolyCheckpointUsers)
     .filter((user) => user != monopolyUser)
     .forEach((user) => {
       users[monopolyUser].resources.push(
-        ...users[user].resources.filter((r) => r == monopolyResource),
+        ...monopolyCheckpointUsers[user].resources.filter(
+          (r) => r == monopolyResource
+        )
       );
 
-      users[user].resources = users[user].resources.filter(
-        (r) => r != monopolyResource,
+      users[user].resources = monopolyCheckpointUsers[user].resources.filter(
+        (r) => r != monopolyResource
       );
 
       while (
-        users[user].resources.length + users[user].extra >
+        monopolyCheckpointUsers[user].resources.length +
+          monopolyCheckpointUsers[user].extra >
         users_cards_count[user]
       ) {
         users[user].extra--;
@@ -374,6 +367,7 @@ const resolveMonopoly = () => {
 const useRoadBuilder = () => {
   road_builder_road_left = 2;
 };
+
 const main = () => {
   const logs = document.getElementById("game-log-text");
 
@@ -466,7 +460,7 @@ const renderUsers = (container, users) => {
       user_resources.forEach((resource) => {
         const resource_element = document.createElement("img");
         resource_element.src = chrome.runtime.getURL(
-          "assets/resources/" + resource + ".svg",
+          "assets/resources/" + resource + ".svg"
         );
         resource_element.width = "30";
         resource_element.style = "margin-left:-20px";
