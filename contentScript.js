@@ -17,7 +17,7 @@ let road_builder_road_left = 0;
 
 const container = document.createElement("div");
 container.style =
-  "position:fixed; bottom:100px; left:300px;display:flex; flex-direction:column; gap:4px;z-index:1000;";
+  "position:fixed; bottom:300px; left:50px;display:flex; flex-direction:column; gap:4px;z-index:1000;";
 
 document.getElementsByTagName("body")[0].appendChild(container);
 
@@ -426,8 +426,8 @@ const renderUsers = (container, users) => {
 
     const input = document.getElementById("input");
 
-    my_name = localStorage.getItem("name");
-    input.value = my_name ?? "";
+    let temp_my_name = localStorage.getItem("name");
+    input.value = temp_my_name ?? "";
 
     const submit_button = document.getElementById("submit");
     console.log(submit_button);
@@ -442,7 +442,7 @@ const renderUsers = (container, users) => {
 
   if (isMonopolyCountPending) {
     const monopolyInstructionElement = document.createElement("div");
-    monopolyInstructionElement.style = `backgound-color:red; color:white; padding:4px;max-width:200px;`;
+    monopolyInstructionElement.style = ` color:white; padding:4px;max-width:200px;`;
     monopolyInstructionElement.innerText =
       "Monopoly card was used. Wait for your turn and then enter the number of cards each player has:";
     container.appendChild(monopolyInstructionElement);
