@@ -13,6 +13,7 @@ CIA (Catan Intelligence Add-on) lets you know your opponents' resources in the g
    ```
    git clone https://github.com/riwajp/CIA.git
    ```
+   Or, just download it as zip.
 
 2. **Load the Extension:**
    - Open your browser and navigate to `chrome://extensions/` (for Chromium based browsers).
